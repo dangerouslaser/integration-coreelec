@@ -40,6 +40,10 @@ docker run --rm \
             src/driver.py
     "
 
+# Copy required metadata files
+cp "$SCRIPT_DIR/driver.json" "$SCRIPT_DIR/dist/$OUTPUT_NAME/"
+cp "$SCRIPT_DIR/coreelec.png" "$SCRIPT_DIR/dist/$OUTPUT_NAME/"
+
 echo ""
 echo "Build complete!"
 echo "Output: $SCRIPT_DIR/dist/$OUTPUT_NAME/"
@@ -47,3 +51,6 @@ echo ""
 echo "To deploy to the Remote:"
 echo "1. Copy the dist/$OUTPUT_NAME/ folder to the Remote"
 echo "2. Install via Web Configurator > Integrations > Add new > Install custom"
+echo ""
+echo "To create a release archive:"
+echo "  cd dist && tar -czvf $OUTPUT_NAME.tar.gz $OUTPUT_NAME/"
