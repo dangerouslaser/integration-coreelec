@@ -47,7 +47,7 @@ class ConfigImportResult(Enum):
 
 @dataclass
 class KodiConfigDevice:
-    """Sony device configuration."""
+    """CoreELEC device configuration."""
 
     id: str
     name: str
@@ -64,6 +64,12 @@ class KodiConfigDevice:
     disable_keyboard_map: bool = field(default=False)
     show_stream_name: bool = field(default=True)
     show_stream_language_name: bool = field(default=True)
+    # CoreELEC-specific fields
+    mac_address: str = field(default="")
+    enable_cec: bool = field(default=True)
+    cec_tv_on: bool = field(default=True)
+    cec_tv_off: bool = field(default=True)
+    cec_volume: bool = field(default=False)
 
     def __post_init__(self):
         """Apply default values on missing fields."""
@@ -159,7 +165,7 @@ class Devices:
         return None
 
     def update(self, device: KodiConfigDevice) -> bool:
-        """Update a configured Sony device and persist configuration."""
+        """Update a configured CoreELEC device and persist configuration."""
         for item in self._config:
             if item.id == device.id:
                 item.name = device.name
@@ -176,6 +182,12 @@ class Devices:
                 item.disable_keyboard_map = device.disable_keyboard_map
                 item.show_stream_name = device.show_stream_name
                 item.show_stream_language_name = device.show_stream_language_name
+                # CoreELEC-specific fields
+                item.mac_address = device.mac_address
+                item.enable_cec = device.enable_cec
+                item.cec_tv_on = device.cec_tv_on
+                item.cec_tv_off = device.cec_tv_off
+                item.cec_volume = device.cec_volume
                 return self.store()
         return False
 

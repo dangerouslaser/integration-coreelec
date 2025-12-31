@@ -174,6 +174,47 @@ _user_input_manual = RequestUserInput(
                 "(ex : commandes de direction)",
             },
         },
+        # CoreELEC-specific fields
+        {
+            "field": {"text": {"value": ""}},
+            "id": "mac_address",
+            "label": {
+                "en": "MAC address (for Wake-on-LAN)",
+                "fr": "Adresse MAC (pour Wake-on-LAN)",
+            },
+        },
+        {
+            "field": {"checkbox": {"value": True}},
+            "id": "enable_cec",
+            "label": {
+                "en": "Enable CEC control",
+                "fr": "Activer le contrôle CEC",
+            },
+        },
+        {
+            "field": {"checkbox": {"value": True}},
+            "id": "cec_tv_on",
+            "label": {
+                "en": "Turn TV on when powering on device (CEC)",
+                "fr": "Allumer la TV lors de la mise en marche (CEC)",
+            },
+        },
+        {
+            "field": {"checkbox": {"value": True}},
+            "id": "cec_tv_off",
+            "label": {
+                "en": "Turn TV off when powering off device (CEC)",
+                "fr": "Eteindre la TV lors de l'arrêt (CEC)",
+            },
+        },
+        {
+            "field": {"checkbox": {"value": False}},
+            "id": "cec_volume",
+            "label": {
+                "en": "Use CEC for AVR volume control",
+                "fr": "Utiliser CEC pour le contrôle du volume AVR",
+            },
+        },
     ],
 )
 
@@ -787,6 +828,12 @@ async def _handle_configuration(msg: UserDataResponse) -> SetupComplete | SetupE
     disable_keyboard_map = msg.input_values["disable_keyboard_map"]
     show_stream_name = msg.input_values["show_stream_name"]
     show_stream_language_name = msg.input_values["show_stream_language_name"]
+    # CoreELEC-specific fields
+    mac_address = msg.input_values.get("mac_address", "")
+    enable_cec = msg.input_values.get("enable_cec", True)
+    cec_tv_on = msg.input_values.get("cec_tv_on", True)
+    cec_tv_off = msg.input_values.get("cec_tv_off", True)
+    cec_volume = msg.input_values.get("cec_volume", False)
 
     if ssl == "false":
         ssl = False
@@ -817,6 +864,27 @@ async def _handle_configuration(msg: UserDataResponse) -> SetupComplete | SetupE
         show_stream_language_name = False
     else:
         show_stream_language_name = True
+
+    # CoreELEC-specific boolean conversions
+    if enable_cec == "false":
+        enable_cec = False
+    else:
+        enable_cec = True
+
+    if cec_tv_on == "false":
+        cec_tv_on = False
+    else:
+        cec_tv_on = True
+
+    if cec_tv_off == "false":
+        cec_tv_off = False
+    else:
+        cec_tv_off = True
+
+    if cec_volume == "false":
+        cec_volume = False
+    else:
+        cec_volume = True
 
     if device_choice:
         _LOG.debug("Configure device following discovery : %s %s", device_choice, _discovered_kodis)
@@ -880,7 +948,7 @@ async def _handle_configuration(msg: UserDataResponse) -> SetupComplete | SetupE
     config.devices.add(
         KodiConfigDevice(
             id=address,
-            name="Kodi",
+            name="CoreELEC",
             address=address,
             username=username,
             password=password,
@@ -894,8 +962,14 @@ async def _handle_configuration(msg: UserDataResponse) -> SetupComplete | SetupE
             disable_keyboard_map=disable_keyboard_map,
             show_stream_name=show_stream_name,
             show_stream_language_name=show_stream_language_name,
+            # CoreELEC-specific fields
+            mac_address=mac_address,
+            enable_cec=enable_cec,
+            cec_tv_on=cec_tv_on,
+            cec_tv_off=cec_tv_off,
+            cec_volume=cec_volume,
         )
-    )  # triggers SonyLG TV instance creation
+    )  # triggers CoreELEC device instance creation
     config.devices.store()
 
     await asyncio.sleep(1)
@@ -932,6 +1006,12 @@ async def _handle_device_reconfigure(msg: UserDataResponse) -> SetupComplete | S
     disable_keyboard_map = msg.input_values["disable_keyboard_map"]
     show_stream_name = msg.input_values["show_stream_name"]
     show_stream_language_name = msg.input_values["show_stream_language_name"]
+    # CoreELEC-specific fields
+    mac_address = msg.input_values.get("mac_address", "")
+    enable_cec = msg.input_values.get("enable_cec", True)
+    cec_tv_on = msg.input_values.get("cec_tv_on", True)
+    cec_tv_off = msg.input_values.get("cec_tv_off", True)
+    cec_volume = msg.input_values.get("cec_volume", False)
 
     if ssl == "false":
         ssl = False
@@ -963,6 +1043,27 @@ async def _handle_device_reconfigure(msg: UserDataResponse) -> SetupComplete | S
     else:
         show_stream_language_name = True
 
+    # CoreELEC-specific boolean conversions
+    if enable_cec == "false":
+        enable_cec = False
+    else:
+        enable_cec = True
+
+    if cec_tv_on == "false":
+        cec_tv_on = False
+    else:
+        cec_tv_on = True
+
+    if cec_tv_off == "false":
+        cec_tv_off = False
+    else:
+        cec_tv_off = True
+
+    if cec_volume == "false":
+        cec_volume = False
+    else:
+        cec_volume = True
+
     _LOG.debug("User has changed configuration")
     _reconfigured_device.address = address
     _reconfigured_device.username = username
@@ -977,8 +1078,14 @@ async def _handle_device_reconfigure(msg: UserDataResponse) -> SetupComplete | S
     _reconfigured_device.disable_keyboard_map = disable_keyboard_map
     _reconfigured_device.show_stream_name = show_stream_name
     _reconfigured_device.show_stream_language_name = show_stream_language_name
+    # CoreELEC-specific fields
+    _reconfigured_device.mac_address = mac_address
+    _reconfigured_device.enable_cec = enable_cec
+    _reconfigured_device.cec_tv_on = cec_tv_on
+    _reconfigured_device.cec_tv_off = cec_tv_off
+    _reconfigured_device.cec_volume = cec_volume
 
-    config.devices.add_or_update(_reconfigured_device)  # triggers ATV instance update
+    config.devices.add_or_update(_reconfigured_device)  # triggers CoreELEC instance update
     await asyncio.sleep(1)
     _LOG.info("Setup successfully completed for %s", _reconfigured_device.name)
 

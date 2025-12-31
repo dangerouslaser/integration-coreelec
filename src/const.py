@@ -136,6 +136,10 @@ KODI_SIMPLE_COMMANDS = {
     "ACTION_GREEN": "green",
     "ACTION_RED": "red",
     "ACTION_YELLOW": "yellow",
+    # CoreELEC CEC commands
+    "CEC_TV_ON": "CECActivateSource",
+    "CEC_TV_OFF": "CECStandby",
+    "CEC_TOGGLE": "CECToggleState",
 }
 
 KODI_SIMPLE_COMMANDS_DIRECT = ["System.Hibernate", "System.Reboot", "System.Shutdown", "System.Suspend"]

@@ -9,6 +9,7 @@ import asyncio
 import base64
 import datetime
 import logging
+import socket
 import time
 import urllib.parse
 from asyncio import AbstractEventLoop, Future, Lock, Task, shield
@@ -25,6 +26,8 @@ from typing import (
     ParamSpec,
     TypeVar,
 )
+
+from wakeonlan import send_magic_packet
 
 import jsonrpc_base
 import ucapi
@@ -1284,23 +1287,41 @@ class KodiDevice:
         if volume is None:
             return ucapi.StatusCodes.BAD_REQUEST
         _LOG.debug("[%s] Kodi setting volume to %s", self.device_config.address, volume)
+        # Note: CEC doesn't support absolute volume, only up/down
+        # So we always use Kodi's internal volume for SetVolume
         await self._kodi.set_volume_level(int(volume))
 
     @retry()
     async def volume_up(self):
-        """Send volume-up command to Kodi."""
-        await self._kodi.volume_up()
+        """Send volume-up command to Kodi or AVR via CEC."""
+        if self.device_config.cec_volume:
+            # Use CEC VolumeUp - sends to AVR
+            _LOG.debug("[%s] Sending CEC VolumeUp to AVR", self.device_config.address)
+            await self._kodi.call_method("Input.ExecuteAction", action="VolumeUp")
+        else:
+            # Use Kodi's internal volume
+            await self._kodi.volume_up()
 
     @retry()
     async def volume_down(self):
-        """Send volume-down command to Kodi."""
-        await self._kodi.volume_down()
+        """Send volume-down command to Kodi or AVR via CEC."""
+        if self.device_config.cec_volume:
+            # Use CEC VolumeDown - sends to AVR
+            _LOG.debug("[%s] Sending CEC VolumeDown to AVR", self.device_config.address)
+            await self._kodi.call_method("Input.ExecuteAction", action="VolumeDown")
+        else:
+            # Use Kodi's internal volume
+            await self._kodi.volume_down()
 
     @retry()
     async def mute(self, muted: bool):
-        """Send mute command to Kodi."""
+        """Send mute command to Kodi or AVR via CEC."""
         _LOG.debug("[%s] Sending mute: %s", self.device_config.address, muted)
-        await self._kodi.mute(muted)
+        if self.device_config.cec_volume:
+            # Use CEC Mute - sends to AVR
+            await self._kodi.call_method("Input.ExecuteAction", action="Mute")
+        else:
+            await self._kodi.mute(muted)
 
     async def async_media_play(self):
         """Send play command."""
@@ -1359,14 +1380,64 @@ class KodiDevice:
         await self._kodi.call_method("Input.Home")
 
     async def power_on(self):
-        """Handle connection to Kodi device."""
+        """Handle connection to CoreELEC device with WoL and CEC support."""
+        # Send Wake-on-LAN if MAC address is configured
+        if self.device_config.mac_address:
+            _LOG.info("[%s] Sending Wake-on-LAN to %s", self.device_config.address, self.device_config.mac_address)
+            try:
+                send_magic_packet(self.device_config.mac_address)
+                # Wait for device to wake up
+                await asyncio.sleep(3)
+            except Exception as ex:
+                _LOG.warning("[%s] Failed to send WoL packet: %s", self.device_config.address, ex)
+
+        # Connect to Kodi
         self.event_loop.create_task(self.connect())
         await asyncio.sleep(0)
+
+        # Send CEC command to turn on TV after connection is established
+        if self.device_config.enable_cec and self.device_config.cec_tv_on:
+            # Schedule CEC activation after connection
+            async def delayed_cec_activate():
+                await asyncio.sleep(2)  # Wait for connection to establish
+                if self._state != MediaStates.OFF:
+                    await self.cec_activate_source()
+
+            self.event_loop.create_task(delayed_cec_activate())
+
         return ucapi.StatusCodes.OK
+
+    async def cec_activate_source(self):
+        """Send CEC command to activate source (turn on TV)."""
+        try:
+            _LOG.info("[%s] Sending CEC ActivateSource", self.device_config.address)
+            await self._kodi.call_method("Input.ExecuteAction", action="CECActivateSource")
+        except Exception as ex:
+            _LOG.warning("[%s] Failed to send CEC activate: %s", self.device_config.address, ex)
+
+    async def cec_standby(self):
+        """Send CEC command to put TV on standby."""
+        try:
+            _LOG.info("[%s] Sending CEC Standby", self.device_config.address)
+            await self._kodi.call_method("Input.ExecuteAction", action="CECStandby")
+        except Exception as ex:
+            _LOG.warning("[%s] Failed to send CEC standby: %s", self.device_config.address, ex)
+
+    async def cec_toggle(self):
+        """Send CEC command to toggle TV power state."""
+        try:
+            _LOG.info("[%s] Sending CEC Toggle", self.device_config.address)
+            await self._kodi.call_method("Input.ExecuteAction", action="CECToggleState")
+        except Exception as ex:
+            _LOG.warning("[%s] Failed to send CEC toggle: %s", self.device_config.address, ex)
 
     @retry()
     async def power_off(self):
-        """Send Power Off command."""
+        """Send Power Off command with CEC support."""
+        # Send CEC standby to turn off TV first
+        if self.device_config.enable_cec and self.device_config.cec_tv_off:
+            await self.cec_standby()
+
         try:
             await self._kodi.call_method("Application.Quit")
         except TransportError as ex:

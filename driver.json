@@ -1,22 +1,21 @@
 {
-  "driver_id": "kodi_driver",
-  "version": "1.13.0",
+  "driver_id": "coreelec_driver",
+  "version": "1.0.0",
   "min_core_api": "0.20.0",
   "name": {
-    "en": "Kodi"
+    "en": "CoreELEC"
   },
-  "icon":"custom:kodi.png",
+  "icon": "custom:coreelec.png",
   "description": {
-    "en": "Control your Kodi instances with Remote Two/3.",
-    "de": "Steuere Kodi instances mit Remote Two/3.",
-    "fr": "Contrôler vos instances Kodi avec Remote Two/3."
+    "en": "Control CoreELEC with Wake-on-LAN and CEC TV/AVR support.",
+    "de": "Steuere CoreELEC mit Wake-on-LAN und CEC TV/AVR Unterstützung.",
+    "fr": "Contrôler CoreELEC avec Wake-on-LAN et support CEC TV/AVR."
   },
   "developer": {
-    "name": "Albaintor",
-    "email": "albaintor@github.com",
-    "url": "https://github.com/albaintor"
+    "name": "dangerouslaser",
+    "url": "https://github.com/dangerouslaser"
   },
-  "home_page": "https://github.com/albaintor/integration-kodi",
+  "home_page": "https://github.com/dangerouslaser/integration-coreelec",
   "setup_data_schema": {
     "title": {
       "en": "Integration setup",
@@ -34,13 +33,13 @@
         "field": {
           "label": {
             "value": {
-              "en": "The integration will let you configure your Kodi instances on your network.",
-              "fr": "Cette intégration permet de configurer vos instances Kodi dans le réseau."
+              "en": "Configure your CoreELEC device with WoL and CEC support.",
+              "fr": "Configurez votre appareil CoreELEC avec support WoL et CEC."
             }
           }
         }
       }
     ]
   },
-  "release_date": "2025-12-07"
+  "release_date": "2025-12-31"
 }
