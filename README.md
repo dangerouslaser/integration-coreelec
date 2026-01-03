@@ -1,5 +1,7 @@
 # CoreELEC Integration for Unfolded Circle Remote Two/3
 
+# THIS IS BETA SOFTWARE. EXPECT BUGS.
+
 Control your CoreELEC device with **Wake-on-LAN** and **HDMI-CEC** support for TV and AVR control.
 
 Based on [integration-kodi](https://github.com/albaintor/integration-kodi) by Albaintor, with CoreELEC-specific enhancements.
